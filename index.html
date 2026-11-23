@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>Контроль номеров</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--panel:#111c2e;--panel2:#17243a;--line:#263750;--text:#edf3fb;--muted:#9aabc1;--green:#19b56b;--red:#ed4b58;--blue:#4b8cff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#15243b 0,#0b1220 55%);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,Arial;color:var(--text);min-height:100vh}
+.wrap{max-width:1100px;margin:auto;padding:28px 18px 60px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:24px}
+h1{font-size:clamp(24px,4vw,34px);margin:0;letter-spacing:-.6px}.sub{color:var(--muted);margin-top:5px}.pill{border:1px solid var(--line);border-radius:999px;padding:7px 12px;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}.panel{background:rgba(17,28,46,.94);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 12px 35px #0002}
+h2{font-size:17px;margin:0 0 14px}.row{display:flex;gap:10px}.row>*{min-width:0}.field{width:100%;background:#0c1626;border:1px solid var(--line);border-radius:11px;padding:12px 13px;color:var(--text);font:inherit;outline:none}.field:focus{border-color:var(--blue)}
+button{border:0;border-radius:11px;padding:11px 15px;font:600 14px system-ui;cursor:pointer;transition:.15s}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:var(--blue);color:white}.secondary{background:#263750;color:var(--text)}.danger{background:#48212b;color:#ff9ca4}.full{width:100%}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}.stat{background:#0c1626;border:1px solid var(--line);border-radius:13px;padding:13px}.stat small{display:block;color:var(--muted);font-size:12px}.stat strong{font-size:25px;display:block;margin-top:3px}.green-t{color:#49d995}.red-t{color:#ff7780}
+.toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:22px 0 12px}.toolbar h2{margin:0}.search{max-width:280px}
+.tablebox{overflow-x:auto;border:1px solid var(--line);border-radius:14px}table{border-collapse:collapse;width:100%;min-width:680px;background:#101b2c}th,td{text-align:left;padding:13px 14px;border-bottom:1px solid var(--line)}th{font-size:12px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);background:#142137}tr:last-child td{border-bottom:0}.number{font-weight:650;letter-spacing:.2px}.status{display:inline-flex;align-items:center;gap:8px;font-weight:650}.dot{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 12px currentColor}.status.banned{color:#ff7780}.status.normal{color:#49d995}.status.banned .dot{background:var(--red)}
+.switch{position:relative;width:54px;height:29px;border-radius:99px;background:var(--green);padding:3px;display:inline-flex;align-items:center;cursor:pointer;border:1px solid #ffffff20}.switch .knob{height:21px;width:21px;background:white;border-radius:50%;transition:transform .18s;box-shadow:0 1px 4px #0005}.switch.on{background:var(--red)}.switch.on .knob{transform:translateX(25px)}.switch:focus-visible{outline:2px solid white;outline-offset:3px}
+.timer{font-variant-numeric:tabular-nums;font-family:ui-monospace,monospace;font-weight:650;font-size:15px}.timer.normal{color:#49d995}.timer.banned{color:#ff7780}
+.empty{text-align:center;padding:34px;color:var(--muted)}.muted{color:var(--muted);font-size:13px}.hidden{display:none!important}.auth{max-width:440px;margin:7vh auto}.auth .field{margin:7px 0}.auth-actions{display:flex;gap:9px;margin-top:10px}.auth-actions button{flex:1}
+#message{margin-top:12px;color:var(--muted);font-size:13px;min-height:18px}.report{margin-top:18px;white-space:pre-wrap;background:#0c1626;border:1px solid var(--line);border-radius:12px;padding:14px;font-family:ui-monospace,monospace;font-size:13px}
+.foot{margin-top:18px;color:var(--muted);font-size:12px;text-align:center}
+@media(max-width:760px){.wrap{padding:20px 12px 40px}.grid{grid-template-columns:1fr}.panel{padding:16px}.top{align-items:flex-start;flex-direction:column}.top .pill{align-self:flex-start}.toolbar{align-items:stretch;flex-direction:column}.search{max-width:none}.stats{gap:7px}.stat{padding:10px}.stat strong{font-size:22px}.row.addrow{flex-direction:column}.row.addrow button{width:100%}}
+@media print{body{background:white;color:#111}.wrap{max-width:none;padding:0}.top .pill,.grid,.toolbar button,.search,.switch,.actions,.foot{display:none!important}.panel,.tablebox{background:white;border:1px solid #bbb;box-shadow:none}th{background:#eee;color:#333}td,th{color:#111;border-color:#ddd}.status.normal{color:#087b45}.status.banned{color:#bd1f2c}.report{background:white;color:#111;border-color:#bbb}}
+</style>
+</head>
+<body>
+<section id="authView" class="wrap auth">
+  <div class="panel">
+    <h1>Контроль номеров</h1>
+    <p class="sub">Личный список с синхронизацией между устройствами</p>
+    <div id="configNotice" class="muted" style="margin:18px 0">Сначала добавь настройки Supabase в код сайта (инструкция в SETUP.txt).</div>
+    <input id="email" class="field" type="email" placeholder="Твоя почта" autocomplete="username">
+    <input id="password" class="field" type="password" placeholder="Пароль" autocomplete="current-password">
+    <div class="auth-actions">
+      <button id="loginBtn" class="primary">Войти</button>
+      <button id="signupBtn" class="secondary">Создать аккаунт</button>
+    </div>
+    <div id="authMessage" class="muted" style="margin-top:12px"></div>
+  </div>
+</section>
+
+<main id="appView" class="wrap hidden">
+  <header class="top">
+    <div><h1>Контроль номеров</h1><div class="sub">Твой личный список · синхронизация включена</div></div>
+    <div class="row" style="align-items:center"><span class="pill" id="syncState">Подключение…</span><button id="logoutBtn" class="secondary">Выйти</button></div>
+  </header>
+
+  <section class="grid">
+    <div class="panel">
+      <h2>Добавить номер</h2>
+      <div class="row addrow">
+        <input id="newNumber" class="field" type="tel" inputmode="tel" placeholder="+7 777 123 45 67" maxlength="30">
+        <button id="addBtn" class="primary">＋ Добавить</button>
+      </div>
+      <div id="message"></div>
+    </div>
+    <div class="panel">
+      <h2>Сводка по списку</h2>
+      <div class="stats">
+        <div class="stat"><small>Всего</small><strong id="totalCount">0</strong></div>
+        <div class="stat"><small>Норм</small><strong class="green-t" id="normalCount">0</strong></div>
+        <div class="stat"><small>Бан</small><strong class="red-t" id="bannedCount">0</strong></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toolbar">
+    <h2>Список номеров</h2>
+    <input id="search" class="field search" placeholder="Поиск номера…">
+  </div>
+  <div class="tablebox">
+    <table>
+      <thead><tr><th>№</th><th>Номер</th><th>Статус</th><th>Время в статусе</th><th>Переключатель</th><th class="actions">Действие</th></tr></thead>
+      <tbody id="numberRows"><tr><td colspan="6" class="empty">Загружаем список…</td></tr></tbody>
+    </table>
+  </div>
+  <section class="panel" style="margin-top:18px">
+    <div class="row" style="justify-content:space-between;align-items:center;flex-wrap:wrap">
+      <div><h2 style="margin-bottom:3px">Отчёт за день</h2><div class="muted">Снимок текущих статусов на момент создания отчёта</div></div>
+      <button id="reportBtn" class="primary">Сделать отчёт</button>
+    </div>
+    <div id="reportOutput" class="report hidden"></div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap">
+      <button id="printBtn" class="secondary hidden">Печать / сохранить PDF</button>
+      <button id="copyBtn" class="secondary hidden">Скопировать отчёт</button>
+    </div>
+  </section>
+  <div class="foot">Данные хранятся в облаке и доступны после входа с любого твоего устройства.</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ВСТАВЬ СЮДА URL И anon public key ИЗ НАСТРОЕК СВОЕГО ПРОЕКТА SUPABASE */
+const SUPABASE_URL = "https://xtbpiqexjorzncfggfvj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_nDskKgbNvK4XlpDZDbI-Ng_oOeK2hKa";
+
+const $ = id => document.getElementById(id);
+let client = null, currentUser = null, records = [], channel = null, latestReport = "";
+const configured = SUPABASE_URL.startsWith("https://") && !SUPABASE_ANON_KEY.includes("ВСТАВЬ");
+if (configured && window.supabase) {
+  client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+  });
+  $("configNotice").textContent = "Войди в свой личный аккаунт. Для ПК и телефона используй одну и ту же почту.";
+} else {
+  $("configNotice").textContent = "Нужно один раз подключить бесплатную облачную базу Supabase. Открой SETUP.txt рядом с сайтом — там пошаговая настройка.";
+}
+function authMsg(s){$("authMessage").textContent=s}
+function message(s){$("message").textContent=s}
+function showApp(show){$("authView").classList.toggle("hidden",show);$("appView").classList.toggle("hidden",!show)}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function statusSince(x){const t=Date.parse(x.status_changed_at||x.created_at);return isNaN(t)?Date.now():t}
+function fmtDuration(ms){
+  let t=Math.max(0,Math.floor(ms/1000));
+  const d=Math.floor(t/86400);t%=86400;
+  const h=Math.floor(t/3600);t%=3600;
+  const m=Math.floor(t/60),sec=t%60,p=n=>String(n).padStart(2,'0');
+  return (d?d+' д ':'')+p(h)+':'+p(m)+':'+p(sec);
+}
+function tickTimers(){
+  const now=Date.now();
+  document.querySelectorAll('.timer[data-since]').forEach(el=>{el.textContent=fmtDuration(now-Number(el.dataset.since))});
+}
+setInterval(tickTimers,1000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tickTimers()});
+function render(){
+  $("totalCount").textContent=records.length;
+  $("normalCount").textContent=records.filter(x=>!x.is_banned).length;
+  $("bannedCount").textContent=records.filter(x=>x.is_banned).length;
+  const q=$("search").value.trim().toLowerCase();
+  const filtered=records.filter(x=>x.phone.toLowerCase().includes(q));
+  $("numberRows").innerHTML=filtered.length?filtered.map((x,i)=>`
+    <tr>
+      <td>${i+1}</td><td class="number">${escapeHtml(x.phone)}</td>
+      <td><span class="status ${x.is_banned?'banned':'normal'}"><span class="dot"></span>${x.is_banned?'БАН':'НОРМ'}</span></td>
+      <td><span class="timer ${x.is_banned?'banned':'normal'}" data-since="${statusSince(x)}">${fmtDuration(Date.now()-statusSince(x))}</span></td>
+      <td><button class="switch ${x.is_banned?'on':''}" aria-label="${x.is_banned?'Снять бан':'Поставить бан'}" title="${x.is_banned?'Снять бан':'Поставить бан'}" data-toggle="${x.id}"><span class="knob"></span></button></td>
+      <td class="actions"><button class="danger" data-delete="${x.id}">Удалить</button></td>
+    </tr>`).join(''):`<tr><td colspan="6" class="empty">${q?'Ничего не найдено':'Список пока пуст. Добавь первый номер выше.'}</td></tr>`;
+  document.querySelectorAll('[data-toggle]').forEach(b=>b.addEventListener('click',()=>toggleStatus(b.dataset.toggle)));
+  document.querySelectorAll('[data-delete]').forEach(b=>b.addEventListener('click',()=>deleteNumber(b.dataset.delete)));
+}
+async function loadRecords(){
+  $("syncState").textContent="Синхронизация…";
+  const {data,error}=await client.from("phone_records").select("*").order("created_at",{ascending:false});
+  if(error){$("syncState").textContent="Ошибка базы";message(error.message);return}
+  records=data||[];render();$("syncState").textContent="● Синхронизировано";
+}
+async function addNumber(){
+  const phone=$("newNumber").value.trim();
+  if(!phone){message("Введи номер телефона.");return}
+  if(phone.length<5){message("Проверь номер — он слишком короткий.");return}
+  if(records.some(x=>x.phone.replace(/\s/g,'')===phone.replace(/\s/g,''))){message("Такой номер уже есть в списке.");return}
+  $("addBtn").disabled=true;
+  const {error}=await client.from("phone_records").insert({phone,is_banned:false,user_id:currentUser.id});
+  $("addBtn").disabled=false;
+  if(error){message("Не удалось добавить: "+error.message);return}
+  $("newNumber").value="";message("Номер добавлен.");await loadRecords();
+}
+async function toggleStatus(id){
+  const item=records.find(x=>x.id===id);if(!item)return;
+  const {error}=await client.from("phone_records").update({is_banned:!item.is_banned,status_changed_at:new Date().toISOString()}).eq("id",id);
+  if(error){message("Не удалось изменить статус: "+error.message);return}
+  await loadRecords();
+}
+async function deleteNumber(id){
+  const item=records.find(x=>x.id===id);if(!item)return;
+  if(!confirm("Удалить номер "+item.phone+"?"))return;
+  const {error}=await client.from("phone_records").delete().eq("id",id);
+  if(error){message("Не удалось удалить: "+error.message);return}
+  await loadRecords();message("Номер удалён.");
+}
+function makeReport(){
+  const now=new Date(), date=now.toLocaleDateString('ru-RU'), time=now.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  const green=records.filter(x=>!x.is_banned), red=records.filter(x=>x.is_banned);
+  latestReport=`ОТЧЁТ ПО НОМЕРАМ\nДата: ${date}\nВремя создания: ${time}\n\nВсего номеров: ${records.length}\nНОРМ (зелёные): ${green.length}\nБАН (красные): ${red.length}\n\nЗЕЛЁНЫЕ / НОРМ:\n${green.length?green.map(x=>'• '+x.phone+' — '+fmtDuration(now-statusSince(x))).join('\n'):'— нет'}\n\nКРАСНЫЕ / БАН:\n${red.length?red.map(x=>'• '+x.phone+' — '+fmtDuration(now-statusSince(x))).join('\n'):'— нет'}\n`;
+  $("reportOutput").textContent=latestReport;$("reportOutput").classList.remove('hidden');$("printBtn").classList.remove('hidden');$("copyBtn").classList.remove('hidden');
+}
+async function enter(user){
+  currentUser=user;showApp(true);
+  await loadRecords();
+  if(channel)await client.removeChannel(channel);
+  channel=client.channel('phone-records-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'phone_records',filter:'user_id=eq.'+user.id},()=>loadRecords()).subscribe();
+}
+$("loginBtn").onclick=async()=>{
+  if(!client){authMsg("Сначала настрой Supabase по инструкции SETUP.txt.");return}
+  const {data,error}=await client.auth.signInWithPassword({email:$("email").value.trim(),password:$("password").value});
+  if(error){authMsg(error.message);return}authMsg("");await enter(data.user);
+};
+$("signupBtn").onclick=async()=>{
+  if(!client){authMsg("Сначала настрой Supabase по инструкции SETUP.txt.");return}
+  const {data,error}=await client.auth.signUp({email:$("email").value.trim(),password:$("password").value});
+  if(error){authMsg(error.message);return}
+  authMsg(data.session?"Аккаунт создан. Теперь войди.":"Аккаунт создан. Проверь почту для подтверждения, затем войди.");
+};
+$("logoutBtn").onclick=async()=>{if(channel)await client.removeChannel(channel);await client.auth.signOut();currentUser=null;records=[];showApp(false)};
+$("addBtn").onclick=addNumber;
+$("newNumber").addEventListener('keydown',e=>{if(e.key==='Enter')addNumber()});
+$("search").addEventListener('input',render);
+$("reportBtn").onclick=makeReport;
+$("printBtn").onclick=()=>window.print();
+$("copyBtn").onclick=async()=>{try{await navigator.clipboard.writeText(latestReport);message("Отчёт скопирован.")}catch(e){message("Не удалось скопировать. Выдели текст отчёта вручную.")}};
+if(client){
+  client.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user)});
+  client.auth.onAuthStateChange((event,session)=>{if(event==='SIGNED_OUT'){showApp(false)}});
+}
+</script>
+</body>
+</html>
